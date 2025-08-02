@@ -66,7 +66,7 @@ if menu == 'AI 윤리와 스마트팜':
     with col1:
         st.subheader("AI 윤리와 스마트팜 📺")
         youtube_url = st.text_input("유튜브 영상 URL을 입력하세요:", 
-                                    "https://www.youtube.com/watch?v=JrWHG4mBdcQ")  # 예시 URL
+                                    "https://youtu.be/Z_IujtVJ9PE?si=KzUmuUAdM78qhFXF")  # 예시 URL
         if youtube_url:
             try:
                 st.video(youtube_url)
