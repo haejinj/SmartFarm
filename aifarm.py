@@ -1,6 +1,10 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from collections import Counter
+import re
 
 # 페이지 설정
 st.set_page_config(layout='wide', page_title='생성형 AI를 활용한 융합 수업')
@@ -10,7 +14,7 @@ st.title('Ethic is good for us')
 
 # 사이드바 메뉴
 st.sidebar.subheader('메뉴')
-menu = st.sidebar.radio('기능을 선택하세요:', ['AI 윤리와 스마트팜', '식물 상태 분석'])
+menu = st.sidebar.radio('기능을 선택하세요:', ['AI 윤리와 스마트팜', '식물 상태 분석', '텍스트 마이닝'])
 
 # 화면 분할: (4,1) 비율로 컬럼 생성
 col1, col2 = st.columns([4, 1])
@@ -37,6 +41,23 @@ def analyze_plant_health(image):
     except Exception as e:
         return "분석 오류", f"이미지 처리 중 오류가 발생했습니다: {str(e)}"
 
+# 텍스트 마이닝 및 시각화 함수
+def generate_wordcloud(text):
+    # 텍스트 전처리: 특수문자 제거 및 소문자 변환
+    words = re.findall(r'\w+', text.lower())
+    
+    # 단어 빈도 계산
+    word_counts = Counter(words)
+    
+    # 워드클라우드 생성
+    wordcloud = WordCloud(width=800, height=400, background_color='white', font_path=None).generate_from_frequencies(word_counts)
+    
+    # Matplotlib로 시각화
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+    return fig
+
 # 메뉴에 따라 다른 콘텐츠 표시
 if menu == 'AI 윤리와 스마트팜':
     # 왼쪽 콘텐츠 영역 - 유튜브 영상
@@ -50,6 +71,20 @@ if menu == 'AI 윤리와 스마트팜':
             except Exception as e:
                 st.error(f"유튜브 영상 로드 중 오류: {str(e)}")
         st.caption("※ AI와 윤리, 스마트 기술이 어떻게 융합되는지 확인해 보세요.")
+        
+        # 학생 생각 기록 입력란
+        st.subheader("너의 생각을 기록해 보세요 ✍️")
+        student_thoughts = st.text_area("AI 윤리와 스마트팜에 대해 느낀 점이나 생각을 적어주세요:", height=100)
+        if st.button("제출하기"):
+            if student_thoughts.strip():
+                try:
+                    with open("data.txt", "a", encoding="utf-8") as f:
+                        f.write(student_thoughts + "\n\n")
+                    st.success("생각이 성공적으로 저장되었습니다!")
+                except Exception as e:
+                    st.error(f"저장 중 오류: {str(e)}")
+            else:
+                st.warning("내용을 입력해주세요.")
 
     # 오른쪽 팁 영역
     with col2:
@@ -105,4 +140,37 @@ elif menu == '식물 상태 분석':
 
         - **주의할 점**  
           AI의 판단이 항상 정확할까요? 잘못된 판단을 줄이려면 어떤 데이터를 더 수집해야 할까요?
+        """)
+
+elif menu == '텍스트 마이닝':
+    with col1:
+        st.subheader("학생들의 생각 분석 📊")
+        st.write("학생들이 작성한 생각을 바탕으로 자주 등장하는 단어를 시각화합니다.")
+        
+        try:
+            with open("data.txt", "r", encoding="utf-8") as f:
+                text = f.read()
+            if text.strip():
+                # 워드클라우드 생성 및 표시
+                fig = generate_wordcloud(text)
+                st.pyplot(fig)
+                st.markdown("**분석 결과 해석**: 위 워드클라우드는 학생들의 생각에서 자주 등장하는 단어를 보여줍니다. 어떤 단어가 많이 나왔나요? 이는 어떤 생각을 반영할까요?")
+            else:
+                st.warning("data.txt 파일이 비어 있습니다. 먼저 생각을 제출해주세요.")
+        except FileNotFoundError:
+            st.error("data.txt 파일을 찾을 수 없습니다. 먼저 생각을 제출하여 파일을 생성하세요.")
+        except Exception as e:
+            st.error(f"텍스트 마이닝 중 오류: {str(e)}")
+
+    with col2:
+        st.subheader("팁 💡")
+        st.markdown("""
+        - **텍스트 마이닝이란?**  
+          텍스트 데이터를 분석하여 중요한 단어나 패턴을 찾아내는 기술입니다.
+
+        - **스마트팜과의 연관성**  
+          텍스트 마이닝은 농업 데이터를 분석해 농부의 의견이나 문제를 파악하는 데 사용될 수 있습니다.
+
+        - **생각해볼 점**  
+          자주 등장하는 단어는 어떤 의미를 가질까요? AI가 이를 어떻게 활용할 수 있을까요?
         """)
