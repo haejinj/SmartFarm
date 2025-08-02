@@ -1,7 +1,6 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
-from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from collections import Counter
 import re
@@ -42,20 +41,23 @@ def analyze_plant_health(image):
         return "분석 오류", f"이미지 처리 중 오류가 발생했습니다: {str(e)}"
 
 # 텍스트 마이닝 및 시각화 함수
-def generate_wordcloud(text):
+def generate_word_frequency_chart(text):
     # 텍스트 전처리: 특수문자 제거 및 소문자 변환
     words = re.findall(r'\w+', text.lower())
     
     # 단어 빈도 계산
     word_counts = Counter(words)
     
-    # 워드클라우드 생성
-    wordcloud = WordCloud(width=800, height=400, background_color='white', font_path=None).generate_from_frequencies(word_counts)
+    # 상위 10개 단어 선택
+    top_words = dict(sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10])
     
-    # Matplotlib로 시각화
+    # 바 차트 생성
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.imshow(wordcloud, interpolation='bilinear')
-    ax.axis('off')
+    ax.bar(top_words.keys(), top_words.values(), color='#4CAF50')
+    ax.set_xlabel('단어')
+    ax.set_ylabel('빈도')
+    ax.set_title('학생 생각에서 자주 등장한 단어')
+    plt.xticks(rotation=45)
     return fig
 
 # 메뉴에 따라 다른 콘텐츠 표시
@@ -151,10 +153,10 @@ elif menu == '텍스트 마이닝':
             with open("data.txt", "r", encoding="utf-8") as f:
                 text = f.read()
             if text.strip():
-                # 워드클라우드 생성 및 표시
-                fig = generate_wordcloud(text)
+                # 바 차트 생성 및 표시
+                fig = generate_word_frequency_chart(text)
                 st.pyplot(fig)
-                st.markdown("**분석 결과 해석**: 위 워드클라우드는 학생들의 생각에서 자주 등장하는 단어를 보여줍니다. 어떤 단어가 많이 나왔나요? 이는 어떤 생각을 반영할까요?")
+                st.markdown("**분석 결과 해석**: 위 차트는 학생들의 생각에서 자주 등장하는 단어를 보여줍니다. 어떤 단어가 많이 나왔나요? 이는 어떤 생각을 반영할까요?")
             else:
                 st.warning("data.txt 파일이 비어 있습니다. 먼저 생각을 제출해주세요.")
         except FileNotFoundError:
