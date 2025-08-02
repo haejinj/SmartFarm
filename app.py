@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 from collections import Counter
 import re
 
@@ -10,6 +11,16 @@ st.set_page_config(layout='wide', page_title='생성형 AI를 활용한 융합 �
 
 # 앱 타이틀
 st.title('Ethic is good for us')
+
+# 한글 폰트 설정
+try:
+    # NanumGothic 폰트 설정 (Streamlit Cloud에서 사용 가능한 폰트로 대체 가능)
+    font_path = None  # Streamlit Cloud에서는 시스템 폰트를 사용
+    font_manager.fontManager.addfont(font_path)  # 시스템 폰트 사용 시 필요 없음
+    plt.rcParams['font.family'] = 'DejaVu Sans'  # 기본 폰트로 대체
+    plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
+except Exception as e:
+    st.warning(f"폰트 설정 중 경고: {str(e)}. 기본 폰트를 사용합니다.")
 
 # 사이드바 메뉴
 st.sidebar.subheader('메뉴')
@@ -42,8 +53,8 @@ def analyze_plant_health(image):
 
 # 텍스트 마이닝 및 시각화 함수
 def generate_word_frequency_chart(text):
-    # 텍스트 전처리: 특수문자 제거 및 소문자 변환
-    words = re.findall(r'\w+', text.lower())
+    # 텍스트 전처리: 특수문자 제거
+    words = re.findall(r'\b[\w가-힣]+\b', text)  # 한글 단어 포함
     
     # 단어 빈도 계산
     word_counts = Counter(words)
@@ -66,7 +77,7 @@ if menu == 'AI 윤리와 스마트팜':
     with col1:
         st.subheader("AI 윤리와 스마트팜 📺")
         youtube_url = st.text_input("유튜브 영상 URL을 입력하세요:", 
-                                    "https://youtu.be/Z_IujtVJ9PE?si=KzUmuUAdM78qhFXF")  # 예시 URL
+                                    "https://www.youtube.com/watch?v=JrWHG4mBdcQ")  # 예시 URL
         if youtube_url:
             try:
                 st.video(youtube_url)
