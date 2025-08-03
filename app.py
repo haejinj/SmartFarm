@@ -5,17 +5,28 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 from collections import Counter
 import re
+import base64
+import io
 
 # 페이지 설정
 st.set_page_config(layout='wide', page_title='생성형 AI를 활용한 융합 수업')
 
 # 앱 타이틀
-st.title('We live with AI.')
+st.title('We live with AI!')
 
-# 한글 폰트 설정
+# 한글 폰트 설정 (Streamlit Cloud에서 사용 가능한 폰트로 설정)
 try:
-    plt.rcParams['font.family'] = 'DejaVu Sans'  # Streamlit Cloud에서 기본 폰트 사용
+    # NanumGothic 폰트를 사용하려면 로컬 파일 필요, Cloud에서는 시스템 폰트 사용
+    font_path = None  # Cloud에서 직접 폰트 파일 참조 불가, 시스템 폰트 사용
+    plt.rcParams['font.family'] = 'sans-serif'  # 기본 sans-serif 사용
     plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
+    
+    # Fall back to a known font if available (e.g., Noto Sans CJK)
+    for font_name in font_manager.findSystemFonts():
+        if 'Noto' in font_name or 'Nanum' in font_name:
+            font_manager.FontProperties(fname=font_name)
+            plt.rcParams['font.family'] = font_manager.FontProperties(fname=font_name).get_name()
+            break
 except Exception as e:
     st.warning(f"폰트 설정 중 경고: {str(e)}. 기본 폰트를 사용합니다.")
 
@@ -46,15 +57,23 @@ def analyze_plant_health(image):
 
 # 텍스트 마이닝 및 시각화 함수
 def generate_word_frequency_chart(text):
+    # 텍스트 전처리: 한글과 영어 단어 포함
     words = re.findall(r'\b[\w가-힣]+\b', text)
+    
+    # 단어 빈도 계산
     word_counts = Counter(words)
+    
+    # 상위 10개 단어 선택 (제공된 이미지와 유사한 데이터 구조 가정)
     top_words = dict(sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10])
+    
+    # 바 차트 생성 (제공된 이미지 스타일 반영: 녹색 막대, 유사 레이아웃)
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.bar(top_words.keys(), top_words.values(), color='#4CAF50')
+    bars = ax.bar(top_words.keys(), top_words.values(), color='#4CAF50')  # 녹색 (#4CAF50)
     ax.set_xlabel('단어')
     ax.set_ylabel('빈도')
     ax.set_title('학생 생각에서 자주 등장한 단어')
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=45, ha='right')  # x축 라벨 회전 및 정렬
+    ax.grid(axis='y', linestyle='--', alpha=0.7)  # y축 격자 추가 (이미지 참조)
     return fig
 
 # 학생 의견 읽기 함수
