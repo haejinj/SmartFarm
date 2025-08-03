@@ -7,6 +7,7 @@ from collections import Counter
 import re
 import base64
 import io
+from wordcloud import WordCloud
 
 # 페이지 설정
 st.set_page_config(layout='wide', page_title='생성형 AI를 활용한 융합 수업')
@@ -55,25 +56,30 @@ def analyze_plant_health(image):
     except Exception as e:
         return "분석 오류", f"이미지 처리 중 오류가 발생했습니다: {str(e)}"
 
-# 텍스트 마이닝 및 시각화 함수
-def generate_word_frequency_chart(text):
+# 텍스트 마이닝 및 워드 클라우드 생성 함수
+def generate_wordcloud(text):
     # 텍스트 전처리: 한글과 영어 단어 포함
     words = re.findall(r'\b[\w가-힣]+\b', text)
     
     # 단어 빈도 계산
     word_counts = Counter(words)
     
-    # 상위 10개 단어 선택 (제공된 이미지와 유사한 데이터 구조 가정)
-    top_words = dict(sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10])
+    # 워드 클라우드 생성 (한글 지원을 위해 기본 설정 조정)
+    wordcloud = WordCloud(
+        width=800,
+        height=400,
+        background_color='white',
+        font_path=None,  # Streamlit Cloud에서 시스템 폰트 사용
+        max_words=50,
+        min_font_size=10,
+        max_font_size=100
+    ).generate_from_frequencies(dict(word_counts))
     
-    # 바 차트 생성 (제공된 이미지 스타일 반영: 녹색 막대, 유사 레이아웃)
+    # 시각화
     fig, ax = plt.subplots(figsize=(10, 5))
-    bars = ax.bar(top_words.keys(), top_words.values(), color='#4CAF50')  # 녹색 (#4CAF50)
-    ax.set_xlabel('단어')
-    ax.set_ylabel('빈도')
-    ax.set_title('학생 생각에서 자주 등장한 단어')
-    plt.xticks(rotation=45, ha='right')  # x축 라벨 회전 및 정렬
-    ax.grid(axis='y', linestyle='--', alpha=0.7)  # y축 격자 추가 (이미지 참조)
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+    ax.set_title('학생 생각 워드 클라우드')
     return fig
 
 # 학생 의견 읽기 함수
@@ -192,14 +198,14 @@ elif menu == '식물 상태 분석':
 elif menu == '텍스트 마이닝':
     with col1:
         st.subheader("학생들의 생각 분석 📊")
-        st.write("학생들이 작성한 생각을 바탕으로 자주 등장하는 단어를 시각화합니다.")
+        st.write("학생들이 작성한 생각을 바탕으로 자주 등장하는 단어를 워드 클라우드로 시각화합니다.")
         try:
             with open("data.txt", "r", encoding="utf-8") as f:
                 text = f.read()
             if text.strip():
-                fig = generate_word_frequency_chart(text)
+                fig = generate_wordcloud(text)
                 st.pyplot(fig)
-                st.markdown("**분석 결과 해석**: 위 차트는 학생들의 생각에서 자주 등장하는 단어를 보여줍니다. 어떤 단어가 많이 나왔나요? 이는 어떤 생각을 반영할까요?")
+                st.markdown("**분석 결과 해석**: 위 워드 클라우드는 학생들의 생각에서 자주 등장하는 단어를 크기로 표현합니다. 어떤 단어가 두드러지나요? 이는 어떤 생각을 반영할까요?")
             else:
                 st.warning("data.txt 파일이 비어 있습니다. 먼저 생각을 제출해주세요.")
         except FileNotFoundError:
