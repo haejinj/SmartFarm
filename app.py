@@ -17,17 +17,10 @@ st.title('We live with AI!')
 
 # 한글 폰트 설정 (Streamlit Cloud에서 사용 가능한 폰트로 설정)
 try:
-    # NanumGothic 폰트를 사용하려면 로컬 파일 필요, Cloud에서는 시스템 폰트 사용
-    font_path = None  # Cloud에서 직접 폰트 파일 참조 불가, 시스템 폰트 사용
-    plt.rcParams['font.family'] = 'sans-serif'  # 기본 sans-serif 사용
+    font_path = "NanumGothic.ttf"  # GitHub에 업로드된 폰트 파일 경로
+    font_manager.fontManager.addfont(font_path)
+    plt.rcParams['font.family'] = font_manager.FontProperties(fname=font_path).get_name()
     plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
-    
-    # Fall back to a known font if available (e.g., Noto Sans CJK)
-    for font_name in font_manager.findSystemFonts():
-        if 'Noto' in font_name or 'Nanum' in font_name:
-            font_manager.FontProperties(fname=font_name)
-            plt.rcParams['font.family'] = font_manager.FontProperties(fname=font_name).get_name()
-            break
 except Exception as e:
     st.warning(f"폰트 설정 중 경고: {str(e)}. 기본 폰트를 사용합니다.")
 
@@ -64,12 +57,12 @@ def generate_wordcloud(text):
     # 단어 빈도 계산
     word_counts = Counter(words)
     
-    # 워드 클라우드 생성 (한글 지원을 위해 기본 설정 조정)
+    # 워드 클라우드 생성 (한글 지원을 위해 NanumGothic 사용)
     wordcloud = WordCloud(
         width=800,
         height=400,
         background_color='white',
-        font_path=None,  # Streamlit Cloud에서 시스템 폰트 사용
+        font_path="NanumGothic.ttf",  # 한글 폰트 지정
         max_words=50,
         min_font_size=10,
         max_font_size=100
