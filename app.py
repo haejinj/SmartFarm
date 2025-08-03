@@ -10,7 +10,7 @@ import re
 st.set_page_config(layout='wide', page_title='생성형 AI를 활용한 융합 수업')
 
 # 앱 타이틀
-st.title('Ethic is good for us')
+st.title('We live with AI.')
 
 # 한글 폰트 설정
 try:
