@@ -14,17 +14,14 @@ st.title('Ethic is good for us')
 
 # 한글 폰트 설정
 try:
-    # NanumGothic 폰트 설정 (Streamlit Cloud에서 사용 가능한 폰트로 대체 가능)
-    font_path = None  # Streamlit Cloud에서는 시스템 폰트를 사용
-    font_manager.fontManager.addfont(font_path)  # 시스템 폰트 사용 시 필요 없음
-    plt.rcParams['font.family'] = 'DejaVu Sans'  # 기본 폰트로 대체
+    plt.rcParams['font.family'] = 'DejaVu Sans'  # Streamlit Cloud에서 기본 폰트 사용
     plt.rcParams['axes.unicode_minus'] = False  # 마이너스 기호 깨짐 방지
 except Exception as e:
     st.warning(f"폰트 설정 중 경고: {str(e)}. 기본 폰트를 사용합니다.")
 
 # 사이드바 메뉴
 st.sidebar.subheader('메뉴')
-menu = st.sidebar.radio('기능을 선택하세요:', ['AI 윤리와 스마트팜', '식물 상태 분석', '텍스트 마이닝'])
+menu = st.sidebar.radio('기능을 선택하세요:', ['AI 윤리와 스마트팜', '식물 상태 분석', '텍스트 마이닝', '학생 의견 보기'])
 
 # 화면 분할: (4,1) 비율로 컬럼 생성
 col1, col2 = st.columns([4, 1])
@@ -32,10 +29,7 @@ col1, col2 = st.columns([4, 1])
 # 모의 AI 모델 (교육용으로 단순화된 식물 건강 분석)
 def analyze_plant_health(image):
     try:
-        # 이미지를 배열로 변환
         img_array = np.array(image)
-        
-        # 색상 평균을 이용한 단순 분석
         avg_color = img_array.mean()
         if avg_color < 100:
             health = "건강하지 않음"
@@ -46,23 +40,15 @@ def analyze_plant_health(image):
         else:
             health = "건강함"
             suggestions = "식물이 건강합니다! 현재 조건을 유지하세요."
-        
         return health, suggestions
     except Exception as e:
         return "분석 오류", f"이미지 처리 중 오류가 발생했습니다: {str(e)}"
 
 # 텍스트 마이닝 및 시각화 함수
 def generate_word_frequency_chart(text):
-    # 텍스트 전처리: 특수문자 제거
-    words = re.findall(r'\b[\w가-힣]+\b', text)  # 한글 단어 포함
-    
-    # 단어 빈도 계산
+    words = re.findall(r'\b[\w가-힣]+\b', text)
     word_counts = Counter(words)
-    
-    # 상위 10개 단어 선택
     top_words = dict(sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10])
-    
-    # 바 차트 생성
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.bar(top_words.keys(), top_words.values(), color='#4CAF50')
     ax.set_xlabel('단어')
@@ -71,13 +57,41 @@ def generate_word_frequency_chart(text):
     plt.xticks(rotation=45)
     return fig
 
+# 학생 의견 읽기 함수
+def read_student_thoughts():
+    try:
+        with open("data.txt", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        thoughts = []
+        current_thought = {"name": "", "comment": ""}
+        for line in lines:
+            line = line.strip()
+            if line.startswith("작성자:"):
+                if current_thought["name"] or current_thought["comment"]:
+                    thoughts.append(current_thought)
+                    current_thought = {"name": "", "comment": ""}
+                current_thought["name"] = line.replace("작성자:", "").strip()
+            elif line:
+                current_thought["comment"] += line + " "
+            else:
+                if current_thought["name"] or current_thought["comment"]:
+                    thoughts.append(current_thought)
+                    current_thought = {"name": "", "comment": ""}
+        if current_thought["name"] or current_thought["comment"]:
+            thoughts.append(current_thought)
+        return thoughts
+    except FileNotFoundError:
+        return []
+    except Exception as e:
+        st.error(f"의견 읽기 중 오류: {str(e)}")
+        return []
+
 # 메뉴에 따라 다른 콘텐츠 표시
 if menu == 'AI 윤리와 스마트팜':
-    # 왼쪽 콘텐츠 영역 - 유튜브 영상
     with col1:
         st.subheader("AI 윤리와 스마트팜 📺")
         youtube_url = st.text_input("유튜브 영상 URL을 입력하세요:", 
-                                    "https://youtu.be/Z_IujtVJ9PE?si=GgbC-tL9o0-iwEDm")  # 예시 URL
+                                    "https://youtu.be/Z_IujtVJ9PE?si=GgbC-tL9o0-iwEDm")
         if youtube_url:
             try:
                 st.video(youtube_url)
@@ -87,19 +101,31 @@ if menu == 'AI 윤리와 스마트팜':
         
         # 학생 생각 기록 입력란
         st.subheader("너의 생각을 기록해 보세요 ✍️")
+        student_name = st.text_input("작성자 이름:")
         student_thoughts = st.text_area("AI 윤리와 스마트팜에 대해 느낀 점이나 생각을 적어주세요:", height=100)
         if st.button("제출하기"):
-            if student_thoughts.strip():
+            if student_name.strip() and student_thoughts.strip():
                 try:
                     with open("data.txt", "a", encoding="utf-8") as f:
-                        f.write(student_thoughts + "\n\n")
+                        f.write(f"작성자: {student_name}\n{student_thoughts}\n\n")
                     st.success("생각이 성공적으로 저장되었습니다!")
                 except Exception as e:
                     st.error(f"저장 중 오류: {str(e)}")
             else:
-                st.warning("내용을 입력해주세요.")
+                st.warning("이름과 내용을 모두 입력해주세요.")
+        
+        # 제출된 의견 표시
+        st.subheader("학생들의 의견 📋")
+        thoughts = read_student_thoughts()
+        if thoughts:
+            for i, thought in enumerate(thoughts, 1):
+                if thought["name"] and thought["comment"]:
+                    st.markdown(f"**{i}. {thought['name']}**: {thought['comment']}")
+                elif thought["comment"]:
+                    st.markdown(f"**{i}. 익명**: {thought['comment']}")
+        else:
+            st.info("아직 제출된 의견이 없습니다.")
 
-    # 오른쪽 팁 영역
     with col2:
         st.subheader("팁 💡")
         st.markdown("""
@@ -120,28 +146,17 @@ elif menu == '식물 상태 분석':
     with col1:
         st.subheader("식물 상태 분석 🌱")
         st.write("식물 이미지를 업로드하여 AI가 식물의 건강 상태를 분석합니다.")
-        
-        # 이미지 업로드
         uploaded_image = st.file_uploader("식물 이미지를 업로드하세요", type=['jpg', 'png', 'jpeg'])
-        
         if uploaded_image is not None:
             try:
-                # 업로드된 이미지 표시
                 image = Image.open(uploaded_image)
                 st.image(image, caption='업로드된 식물 이미지', width=300)
-                
-                # 식물 건강 분석
                 health, suggestions = analyze_plant_health(image)
-                
-                # 결과 표시
                 st.write(f"**식물 건강 상태**: {health}")
                 st.write(f"**필요한 조건**: {suggestions}")
-                
-                # 학생들을 위한 토론 질문
                 st.markdown("**생각해보기**: AI가 이 판단을 어떻게 내렸을까요? 색상, 크기, 모양 중 어떤 요소가 중요했을까요?")
             except Exception as e:
                 st.error(f"이미지 처리 중 오류: {str(e)}")
-            
     with col2:
         st.subheader("팁 💡")
         st.markdown("""
@@ -159,12 +174,10 @@ elif menu == '텍스트 마이닝':
     with col1:
         st.subheader("학생들의 생각 분석 📊")
         st.write("학생들이 작성한 생각을 바탕으로 자주 등장하는 단어를 시각화합니다.")
-        
         try:
             with open("data.txt", "r", encoding="utf-8") as f:
                 text = f.read()
             if text.strip():
-                # 바 차트 생성 및 표시
                 fig = generate_word_frequency_chart(text)
                 st.pyplot(fig)
                 st.markdown("**분석 결과 해석**: 위 차트는 학생들의 생각에서 자주 등장하는 단어를 보여줍니다. 어떤 단어가 많이 나왔나요? 이는 어떤 생각을 반영할까요?")
@@ -174,7 +187,6 @@ elif menu == '텍스트 마이닝':
             st.error("data.txt 파일을 찾을 수 없습니다. 먼저 생각을 제출하여 파일을 생성하세요.")
         except Exception as e:
             st.error(f"텍스트 마이닝 중 오류: {str(e)}")
-
     with col2:
         st.subheader("팁 💡")
         st.markdown("""
@@ -186,4 +198,30 @@ elif menu == '텍스트 마이닝':
 
         - **생각해볼 점**  
           자주 등장하는 단어는 어떤 의미를 가질까요? AI가 이를 어떻게 활용할 수 있을까요?
+        """)
+
+elif menu == '학생 의견 보기':
+    with col1:
+        st.subheader("학생들의 의견 목록 📋")
+        st.write("학생들이 제출한 모든 의견을 확인할 수 있습니다.")
+        thoughts = read_student_thoughts()
+        if thoughts:
+            for i, thought in enumerate(thoughts, 1):
+                if thought["name"] and thought["comment"]:
+                    st.markdown(f"**{i}. {thought['name']}**: {thought['comment']}")
+                elif thought["comment"]:
+                    st.markdown(f"**{i}. 익명**: {thought['comment']}")
+        else:
+            st.info("아직 제출된 의견이 없습니다.")
+    with col2:
+        st.subheader("팁 💡")
+        st.markdown("""
+        - **의견 공유의 중요성**  
+          학생들의 다양한 의견을 통해 AI 윤리와 스마트팜에 대한 새로운 관점을 발견할 수 있습니다.
+
+        - **활용 방법**  
+          의견을 읽고 공통된 주제나 아이디어를 찾아보세요. 이를 바탕으로 토론을 진행할 수 있습니다.
+
+        - **생각해볼 점**  
+          어떤 의견이 가장 인상 깊었나요? 왜 그런 생각을 하게 되었을까요?
         """)
